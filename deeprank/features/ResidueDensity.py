@@ -79,10 +79,9 @@ class ResidueDensity(FeatureClass):
                 self.residue_contacts[key2].connections[
                     self.residue_types[key[2]]].append(key)
 
-        # calculate the total number of contacts
-        total_ctc = 0
-        for i in self.residue_contacts:
-            total_ctc += self.residue_contacts[i].density['total']
+        total_ctc = sum(
+            value.density['total'] for value in self.residue_contacts.values()
+        )
         total_ctc = total_ctc / 2
 
         # handle with small interface or no interface
@@ -117,8 +116,8 @@ class ResidueDensity(FeatureClass):
         pairtype = ['-'.join(p) for p in
                     list(itertools.combinations_with_replacement(restype, 2))]
         for p in pairtype:
-            self.feature_data['RCD_' + p] = {}
-            self.feature_data_xyz['RCD_' + p] = {}
+            self.feature_data[f'RCD_{p}'] = {}
+            self.feature_data_xyz[f'RCD_{p}'] = {}
 
         for key, res in self.residue_contacts.items():
 
@@ -134,9 +133,9 @@ class ResidueDensity(FeatureClass):
 
             # iterate through all the connection
             for r in restype:
-                pairtype = 'RCD_' + res.type + '-' + r
+                pairtype = f'RCD_{res.type}-{r}'
                 if pairtype not in self.feature_data:
-                    pairtype = 'RCD_' + r + '-' + res.type
+                    pairtype = f'RCD_{r}-{res.type}'
                 self.feature_data[pairtype][key] = [res.density[r]]
                 self.feature_data_xyz[pairtype][xyz_key] = [res.density[r]]
 

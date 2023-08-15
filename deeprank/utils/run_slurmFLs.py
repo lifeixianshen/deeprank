@@ -43,23 +43,23 @@ def write_slurmscript(all_job_FL, batch_size, slurmDIR='tmp', logDIRi='tmp'):
 
     batchID = 0
     for slurmFL in glob.glob(f'{slurmDIR}/batch*'):
-        logFL = slurmFL + '.out'
+        logFL = f'{slurmFL}.out'
         write_slurm_header(slurmFL, batchID, batch_size, logFL)
         write_slurm_tail(slurmFL)
-        print(slurmFL + ' generated ')
+        print(f'{slurmFL} generated ')
 
 
 def submit_slurmscript(slurm_dir, batch_size=100):
     # submit slurm scripts in batches
     # each batch waits for the previous batch to finish first.
-    slu_FLs = glob.glob(slurm_dir + "/*.slurm")
+    slu_FLs = glob.glob(f"{slurm_dir}/*.slurm")
 
     jobIDs = []
     newjobIDs = []
     num = 0
     for slu_FL in slu_FLs:
 
-        outFL = os.path.splitext(slu_FL)[0] + '.out'
+        outFL = f'{os.path.splitext(slu_FL)[0]}.out'
 
         if os.path.isfile(outFL):
             print(f"{outFL} exists. Skip submitting slurm file.")
@@ -140,20 +140,17 @@ def parse_jobID(jobID):
 
 def write_slurm_header(slurmFL, batchID, batch_size, logFL):
 
-    # - 1. prepare the header string
-    header = ''
+    header = '' + "#!/usr/bin/bash\n"
+    header += "#SBATCH -p normal\n"
 
-    header = header + "#!/usr/bin/bash\n"
-    header = header + "#SBATCH -p normal\n"
-
-    jobName = 'batch' + str(batchID) + ".h5"
-    header = header + "#SBATCH -J " + jobName + "\n"
-    header = header + "#SBATCH -N 1\n"
-    header = header + f"#SBATCH --ntasks-per-node={num_cores}\n"
+    jobName = f'batch{str(batchID)}.h5'
+    header = f"{header}#SBATCH -J {jobName}" + "\n"
+    header += "#SBATCH -N 1\n"
+    header += f"#SBATCH --ntasks-per-node={num_cores}\n"
     header = header + "#SBATCH -t 04:00:00\n"
 
-    header = header + "#SBATCH -o " + logFL + "\n"
-    header = header + "#SBATCH -e " + logFL + "\n"
+    header = f"{header}#SBATCH -o {logFL}" + "\n"
+    header = f"{header}#SBATCH -e {logFL}" + "\n"
 
     common_part = """
     start=`date +%s`
@@ -161,17 +158,12 @@ def write_slurm_header(slurmFL, batchID, batch_size, logFL):
     """
     header = header + common_part
 
-    # - 2. add the header to slurmFL
-    f = open(slurmFL, 'r')
-    content = f.readlines()
-    f.close()
-
+    with open(slurmFL, 'r') as f:
+        content = f.readlines()
     content.insert(0, header)
 
-    f = open(slurmFL, 'w')
-    f.write(''.join(content))
-    f.close()
-
+    with open(slurmFL, 'w') as f:
+        f.write(''.join(content))
     print(f"slurm header added to {slurmFL}")
 
 
@@ -186,9 +178,8 @@ def write_slurm_tail(slurmFL):
     echo "total runtime: $runtime sec"
     """
 
-    f = open(slurmFL, 'a+')
-    f.write(tail)
-    f.close()
+    with open(slurmFL, 'a+') as f:
+        f.write(tail)
 
 
 if not os.path.isdir(slurmDIR):

@@ -28,8 +28,8 @@ def generate(LIST_NAME, clean=False):
 
         print(NAME)
         # sources to assemble the data base
-        pdb_source = [BM4 + 'decoys_pdbFLs/' + NAME + '/water/']
-        pdb_native = [BM4 + 'BM4_dimers_bound/pdbFLs_ori']
+        pdb_source = [f'{BM4}decoys_pdbFLs/{NAME}/water/']
+        pdb_native = [f'{BM4}BM4_dimers_bound/pdbFLs_ori']
 
         # init the data assembler
         database = DataGenerator(
@@ -38,14 +38,16 @@ def generate(LIST_NAME, clean=False):
             data_augmentation=None,
             compute_targets=[
                 'deeprank.targets.dockQ',
-                'deeprank.targets.binary_class'],
+                'deeprank.targets.binary_class',
+            ],
             compute_features=[
                 'deeprank.features.AtomicFeature',
                 'deeprank.features.FullPSSM',
                 'deeprank.features.PSSM_IC',
                 'deeprank.features.BSA',
-                'deeprank.features.ResidueDensity'],
-            hdf5=NAME + '.hdf5',
+                'deeprank.features.ResidueDensity',
+            ],
+            hdf5=f'{NAME}.hdf5',
         )
 
         if not os.path.isfile(database.hdf5):
@@ -119,7 +121,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     # get the names of the directories
-    names = np.sort(os.listdir(BM4 + 'decoys_pdbFLs/')).tolist()
+    names = np.sort(os.listdir(f'{BM4}decoys_pdbFLs/')).tolist()
 
     # remove some files
     # as stated in the README some complex don't have a water stage
@@ -129,7 +131,7 @@ if __name__ == '__main__':
 
     # get the names of thehdf5 already there
     hdf5 = list(filter(lambda x: '.hdf5' in x, os.listdir()))
-    status = ['Done' if n + '.hdf5' in hdf5 else '' for n in names]
+    status = ['Done' if f'{n}.hdf5' in hdf5 else '' for n in names]
     size = [
         "{:5.2f}".format(
             os.path.getsize(
@@ -158,14 +160,9 @@ if __name__ == '__main__':
         print(': Mem Tot --> %4.3f GB\n' % sum(list(map(lambda x: float(x),
                                                         filter(lambda x: len(x) > 0, size)))))
 
-    # compute the data
     else:
 
-        if args.mol is not None:
-            MOL = args.mol
-        else:
-            MOL = names[args.init:args.final + 1]
-
+        MOL = args.mol if args.mol is not None else names[args.init:args.final + 1]
         # set the cuda device
         #os.environ['CUDA_DEVICE'] = args.device
 

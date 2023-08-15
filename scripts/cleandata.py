@@ -31,8 +31,8 @@ def clean_dataset(fname, feature=True, pdb=True, points=True, grid=False):
 
     f5.close()
 
-    os.system('h5repack %s _tmp.h5py' % fname)
-    os.system('mv _tmp.h5py %s' % fname)
+    os.system(f'h5repack {fname} _tmp.h5py')
+    os.system(f'mv _tmp.h5py {fname}')
 
 
 if __name__ == '__main__':

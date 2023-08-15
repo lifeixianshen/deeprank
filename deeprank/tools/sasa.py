@@ -42,9 +42,7 @@ class SASA(object):
         elif center == 'cb':
             self.get_residue_carbon_beta(chain1=chain1, chain2=chain2)
         else:
-            raise ValueError(
-                'Options %s not recognized in SASA.get_center' %
-                center)
+            raise ValueError(f'Options {center} not recognized in SASA.get_center')
 
     def get_residue_center(self, chain1='A', chain2='B'):
         """Compute the average position of all the residues.
@@ -61,9 +59,8 @@ class SASA(object):
         resSeqA = np.unique(resA[:, 0].astype(np.int))
         resSeqB = np.unique(resB[:, 0].astype(np.int))
 
-        self.xyz = {}
+        self.xyz = {chain1: []}
 
-        self.xyz[chain1] = []
         for r in resSeqA:
             xyz = sql.get('x,y,z', chainID=chain1, resSeq=str(r))
             self.xyz[chain1].append(np.mean(xyz))
@@ -73,8 +70,7 @@ class SASA(object):
             xyz = sql.get('x,y,z', chainID=chain2, resSeq=str(r))
             self.xyz[chain1].append(np.mean(xyz))
 
-        self.resinfo = {}
-        self.resinfo[chain1] = []
+        self.resinfo = {chain1: []}
         for r in resA[:, :2]:
             if tuple(r) not in self.resinfo[chain1]:
                 self.resinfo[chain1].append(tuple(r))
@@ -111,13 +107,10 @@ class SASA(object):
         assert len(resB[:, 0].astype(np.int).tolist()) == len(
             np.unique(resB[:, 0].astype(np.int)).tolist())
 
-        self.xyz = {}
-        self.xyz[chain1] = resA[:, 2:].astype(np.float)
+        self.xyz = {chain1: resA[:, 2:].astype(np.float)}
         self.xyz[chain2] = resB[:, 2:].astype(np.float)
 
-        self.resinfo = {}
-        self.resinfo[chain1] = resA[:, :2]
-        self.resinfo[chain2] = resB[:, :2]
+        self.resinfo = {chain1: resA[:, :2], chain2: resB[:, :2]}
 
     def neighbor_vector(
             self,
@@ -168,7 +161,7 @@ class SASA(object):
                 vect /= np.sum(weight)
 
                 resSeq, resName = self.resinfo[chain][i].tolist()
-                key = tuple([chain, int(resSeq), resName])
+                key = chain, int(resSeq), resName
                 value = np.linalg.norm(vect)
                 NV[key] = value
 
@@ -209,7 +202,7 @@ class SASA(object):
             for i, xyz in enumerate(self.xyz[chain]):
                 dist = np.sqrt(np.sum((self.xyz[chain] - xyz)**2, 1))
                 resSeq, resName = self.resinfo[chain][i].tolist()
-                key = tuple([chain, int(resSeq), resName])
+                key = chain, int(resSeq), resName
                 value = np.sum(self.neighbor_weight(dist, lbound, ubound))
                 NC[key] = value
 

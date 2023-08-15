@@ -70,18 +70,13 @@ class FeatureClass(object):
                 # append
                 ds.append(feat)
 
-            if ds:
-                ds = np.array(ds).astype('|S' + str(len(ds[0])))
-            else:
-                ds = np.array(ds)
-
-
+            ds = np.array(ds).astype(f'|S{len(ds[0])}') if ds else np.array(ds)
             # create the dataset
-            if name + '_raw' in featgrp:
-                old_data = featgrp[name + '_raw']
+            if f'{name}_raw' in featgrp:
+                old_data = featgrp[f'{name}_raw']
                 old_data[...] = ds
             else:
-                featgrp.create_dataset(name + '_raw', data=ds)
+                featgrp.create_dataset(f'{name}_raw', data=ds)
 
 
     def export_dataxyz_hdf5(self, featgrp):
@@ -160,7 +155,7 @@ class FeatureClass(object):
                                        resName=r[2]),axis=0).tolist()]
 
                 else:
-                    raise ValueError('Center %s not recognized' %c)
+                    raise ValueError(f'Center {c} not recognized')
 
                 if len(xyz_res) == 0:
                     continue
@@ -172,7 +167,7 @@ class FeatureClass(object):
                 else:
                     raise ValueError('Residue center not found')
 
-        if len(xyz) == 0:
+        if not xyz:
             raise ValueError('Center not found')
 
         return res, xyz

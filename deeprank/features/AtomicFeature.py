@@ -422,7 +422,7 @@ class AtomicFeature(FeatureClass):
         altResName = resName
         for key, values in new_type.items():
             res, atpres, atabs = values
-            if res == resName or res == 'all':
+            if res in [resName, 'all']:
                 if all(x in atNames for x in atpres) and all(
                         x not in atNames for x in atabs):
                     altResName = key
@@ -483,9 +483,7 @@ class AtomicFeature(FeatureClass):
         """
         # in case the resname is not valid
         if resName not in self.valid_resnames:
-            q = [0.0] * len(atNames)
-            return q
-
+            return [0.0] * len(atNames)
         # assign the charges
         q = []
         for at in atNames:

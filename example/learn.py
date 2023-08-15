@@ -17,7 +17,7 @@ out = './out'
 # clean the output dir
 out = './out_3d'
 if os.path.isdir(out):
-    for f in glob.glob(out + '/*'):
+    for f in glob.glob(f'{out}/*'):
         os.remove(f)
     os.removedirs(out)
 

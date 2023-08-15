@@ -39,7 +39,7 @@ def visualize3Ddata(hdf5=None, mol_name=None, out=None):
         outdir = mol_name
 
     if outdir[-1] != '/':
-        outdir = outdir + '/'
+        outdir = f'{outdir}/'
 
     if not os.path.isdir(outdir):
         os.mkdir(outdir)
@@ -47,23 +47,24 @@ def visualize3Ddata(hdf5=None, mol_name=None, out=None):
     try:
         f5 = h5py.File(hdf5, 'r')
     except BaseException:
-        raise FileNotFoundError('HDF5 file %s could not be opened' % hdf5)
+        raise FileNotFoundError(f'HDF5 file {hdf5} could not be opened')
 
     try:
         molgrp = f5[mol_name]
     except BaseException:
-        raise LookupError('Molecule %s not found in %s' % (mol_name, hdf5))
+        raise LookupError(f'Molecule {mol_name} not found in {hdf5}')
 
     # create the pdb file
     sqldb = pdb2sql.pdb2sql(molgrp['complex'][:])
-    sqldb.exportpdb(outdir + '/complex.pdb')
+    sqldb.exportpdb(f'{outdir}/complex.pdb')
     sqldb._close()
 
     # get the grid
-    grid = {}
-    grid['x'] = molgrp['grid_points/x'][:]
-    grid['y'] = molgrp['grid_points/y'][:]
-    grid['z'] = molgrp['grid_points/z'][:]
+    grid = {
+        'x': molgrp['grid_points/x'][:],
+        'y': molgrp['grid_points/y'][:],
+        'z': molgrp['grid_points/z'][:],
+    }
     shape = (len(grid['x']), len(grid['y']), len(grid['z']))
 
     # deals with the features
@@ -95,7 +96,7 @@ def visualize3Ddata(hdf5=None, mol_name=None, out=None):
 
 def export_cube_files(data_dict, data_name, grid, export_path):
 
-    print('-- Export %s data to %s' % (data_name, export_path))
+    print(f'-- Export {data_name} data to {export_path}')
     bohr2ang = 0.52918
 
     # individual axis of the grid
@@ -113,54 +114,44 @@ def export_cube_files(data_dict, data_name, grid, export_path):
     # export files for visualization
     for key, values in data_dict.items():
 
-        fname = export_path + data_name + '_%s' % (key) + '.cube'
-        f = open(fname, 'w')
-        f.write('CUBE FILE\n')
-        f.write("OUTER LOOP: X, MIDDLE LOOP: Y, INNER LOOP: Z\n")
+        fname = export_path + data_name + f'_{key}' + '.cube'
+        with open(fname, 'w') as f:
+            f.write('CUBE FILE\n')
+            f.write("OUTER LOOP: X, MIDDLE LOOP: Y, INNER LOOP: Z\n")
 
-        f.write("%5i %11.6f %11.6f %11.6f\n" % (1, xmin, ymin, zmin))
-        f.write("%5i %11.6f %11.6f %11.6f\n" % (npts[0], scale_res[0], 0, 0))
-        f.write("%5i %11.6f %11.6f %11.6f\n" % (npts[1], 0, scale_res[1], 0))
-        f.write("%5i %11.6f %11.6f %11.6f\n" % (npts[2], 0, 0, scale_res[2]))
+            f.write("%5i %11.6f %11.6f %11.6f\n" % (1, xmin, ymin, zmin))
+            f.write("%5i %11.6f %11.6f %11.6f\n" % (npts[0], scale_res[0], 0, 0))
+            f.write("%5i %11.6f %11.6f %11.6f\n" % (npts[1], 0, scale_res[1], 0))
+            f.write("%5i %11.6f %11.6f %11.6f\n" % (npts[2], 0, 0, scale_res[2]))
 
-        # the cube file require 1 atom
-        f.write("%5i %11.6f %11.6f %11.6f %11.6f\n" % (0, 0, 0, 0, 0))
+            # the cube file require 1 atom
+            f.write("%5i %11.6f %11.6f %11.6f %11.6f\n" % (0, 0, 0, 0, 0))
 
-        last_char_check = True
-        for i in range(npts[0]):
-            for j in range(npts[1]):
-                for k in range(npts[2]):
-                    f.write(" %11.5e" % values[i, j, k])
-                    last_char_check = True
-                    if k % 6 == 5:
+            last_char_check = True
+            for i in range(npts[0]):
+                for j in range(npts[1]):
+                    for k in range(npts[2]):
+                        f.write(" %11.5e" % values[i, j, k])
+                        last_char_check = True
+                        if k % 6 == 5:
+                            f.write("\n")
+                            last_char_check = False
+                    if last_char_check:
                         f.write("\n")
-                        last_char_check = False
-                if last_char_check:
-                    f.write("\n")
-        f.close()
-
         # export VMD script if cube format is required
         fname = export_path + data_name + '.vmd'
-        f = open(fname, 'w')
-        f.write('# can be executed with vmd -e viz_mol.vmd\n\n')
+        with open(fname, 'w') as f:
+            f.write('# can be executed with vmd -e viz_mol.vmd\n\n')
 
-        # write all the cube file in one given molecule
-        keys = list(data_dict.keys())
-        write_molspec_vmd(
-            f,
-            data_name +
-            '_%s.cube' %
-            (keys[0]),
-            'VolumeSlice',
-            'Volume')
-        for idata in range(1, len(keys)):
-            f.write('mol addfile ' + data_name + '_%s.cube\n' % (keys[idata]))
-        f.write('mol rename top ' + data_name)
+            # write all the cube file in one given molecule
+            keys = list(data_dict.keys())
+            write_molspec_vmd(f, f'{data_name}_{keys[0]}.cube', 'VolumeSlice', 'Volume')
+            for idata in range(1, len(keys)):
+                f.write(f'mol addfile {data_name}' + '_%s.cube\n' % (keys[idata]))
+            f.write(f'mol rename top {data_name}')
 
-        # load the complex
-        write_molspec_vmd(f, 'complex.pdb', 'Cartoon', 'Chain')
-
-        f.close()
+            # load the complex
+            write_molspec_vmd(f, 'complex.pdb', 'Cartoon', 'Chain')
 
 
 # quick shortcut for writting the vmd file

@@ -40,7 +40,7 @@ def __compute_target__(decoy, targrp, tarname, save_file=False):
 
     if save_file:
         path = os.path.dirname(os.path.realpath(__file__))
-        ZONE = path + '/zones/'
+        ZONE = f'{path}/zones/'
 
         if not os.path.isdir(ZONE):
             os.mkdir(ZONE)
@@ -61,7 +61,6 @@ def __compute_target__(decoy, targrp, tarname, save_file=False):
             f"{molname} is a native/reference complex "
             f"without '_' in filename. Assign {target} for {tarname}")
 
-    # or it's a decoy
     else:
         if 'native' not in molgrp:
             raise ValueError(
@@ -81,17 +80,11 @@ def __compute_target__(decoy, targrp, tarname, save_file=False):
 
         # comppute the izone/lzone/ref_pairs
         if tarname == "IRMSD":
-            if save_file:
-                izone = ZONE + molname + '.izone'
-            else:
-                izone = None
+            izone = ZONE + molname + '.izone' if save_file else None
             target = sim.compute_irmsd_fast(method='svd', izone=izone)
 
         elif tarname == "LRMSD":
-            if save_file:
-                lzone = ZONE + molname + '.lzone'
-            else:
-                lzone = None
+            lzone = ZONE + molname + '.lzone' if save_file else None
             target = sim.compute_lrmsd_fast(method='svd', lzone=lzone)
 
         elif tarname == "FNAT":

@@ -32,7 +32,7 @@ class TestLearn(unittest.TestCase):
         # clean the output dir
         out = './out_3d_fly'
         if os.path.isdir(out):
-            for f in glob.glob(out + '/*'):
+            for f in glob.glob(f'{out}/*'):
                 os.remove(f)
             os.removedirs(out)
 
@@ -86,7 +86,7 @@ class TestLearn(unittest.TestCase):
         # clean the output dir
         out = './out_3d_reg'
         if os.path.isdir(out):
-            for f in glob.glob(out + '/*'):
+            for f in glob.glob(f'{out}/*'):
                 os.remove(f)
             os.removedirs(out)
 
@@ -135,7 +135,7 @@ class TestLearn(unittest.TestCase):
         # clean the output dir
         out = './out_3d_class'
         if os.path.isdir(out):
-            for f in glob.glob(out + '/*'):
+            for f in glob.glob(f'{out}/*'):
                 os.remove(f)
             os.removedirs(out)
 
@@ -180,7 +180,7 @@ class TestLearn(unittest.TestCase):
         # clean the output dir
         out = './out_2d/'
         if os.path.isdir(out):
-            for f in glob.glob(out + '/*'):
+            for f in glob.glob(f'{out}/*'):
                 os.remove(f)
             os.removedirs(out)
 
@@ -233,7 +233,7 @@ class TestLearn(unittest.TestCase):
         # clean the output dir
         out = './out_test/'
         if os.path.isdir(out):
-            for f in glob.glob(out + '/*'):
+            for f in glob.glob(f'{out}/*'):
                 os.remove(f)
             os.removedirs(out)
 

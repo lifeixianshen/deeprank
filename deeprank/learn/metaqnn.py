@@ -42,22 +42,13 @@ class MetaQNN(object):
         self.post_types = [None, 'relu']
 
         # params of conv layers
-        self.conv_params = {}
-        self.conv_params['output_size'] = range(1, 10)
-        self.conv_params['kernel_size'] = range(2, 5)
-
+        self.conv_params = {'output_size': range(1, 10), 'kernel_size': range(2, 5)}
         # params of pool layers
-        self.pool_params = {}
-        self.pool_params['kernel_size'] = range(2, 5)
-
+        self.pool_params = {'kernel_size': range(2, 5)}
         # params of the dropout layers
-        self.dropout_params = {}
-        self.dropout_params['percent'] = np.linspace(0.1, 0.9, 9)
-
+        self.dropout_params = {'percent': np.linspace(0.1, 0.9, 9)}
         # params of the fc layers
-        self.fc_params = {}
-        self.fc_params['output_size'] = [2**i for i in range(4, 11)]
-
+        self.fc_params = {'output_size': [2**i for i in range(4, 11)]}
         # store the current layers/reward
         self.conv_layers = []
         self.fc_layers = []
@@ -67,10 +58,7 @@ class MetaQNN(object):
         self.final_dim = final_dim
 
         # guess the task (regression/classification)
-        if self.final_dim == 1:
-            self.task = 'reg'
-        else:
-            self.task = 'class'
+        self.task = 'reg' if self.final_dim == 1 else 'class'
 
     #########################################
     #
@@ -79,14 +67,8 @@ class MetaQNN(object):
     #########################################
     def store_model(self):
 
-        conv_layers_params = []
-        for layer in self.conv_layers:
-            conv_layers_params.append(layer.__get_params__())
-
-        fc_layers_params = []
-        for layer in self.fc_layers:
-            fc_layers_params.append(layer.__get_params__())
-
+        conv_layers_params = [layer.__get_params__() for layer in self.conv_layers]
+        fc_layers_params = [layer.__get_params__() for layer in self.fc_layers]
         self.memory.append(saved_model(conv_layers_params=conv_layers_params,
                                        fc_layers_params=fc_layers_params),
                            reward=self.reward)
@@ -161,9 +143,7 @@ class MetaQNN(object):
         # each layer type has its own params
         # the output/input size matching is done automatically
         if name == 'conv':
-            params = {}
-            params['name'] = name
-
+            params = {'name': name}
             if ilayer == 0:
                 params['input_size'] = -1  # fixed by input shape
             else:
@@ -205,14 +185,13 @@ class MetaQNN(object):
         # each layer type has its own params
         # the output/input size matching is done automatically
         name = 'fc'  # so far only fc layer here
-        params = {}
-        params['name'] = name
-        if ilayer == 0:
-            params['input_size'] = -1  # fixed by the conv layers
-        else:
-            params['input_size'] = self.fc_layers[ilayer - 1].output_size
-
-        params['output_size'] = np.random.choice(self.fc_params['output_size'])
+        params = {
+            'name': name,
+            'input_size': -1
+            if ilayer == 0
+            else self.fc_layers[ilayer - 1].output_size,
+            'output_size': np.random.choice(self.fc_params['output_size']),
+        }
         params['post'] = np.random.choice(self.post_types)
 
         current_layer = getattr(

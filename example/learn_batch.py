@@ -72,10 +72,8 @@ def get_hdf5FLs(caseIDs, hdf5_DIR):
 
 def read_listFL(listFL):
 
-    f = open(listFL, 'r')
-    caseIDs = f.readlines()
-    f.close()
-
+    with open(listFL, 'r') as f:
+        caseIDs = f.readlines()
     caseIDs = [x.strip() for x in caseIDs if not re.search('^#', x)]
     print(f"{len(caseIDs)} cases read from {listFL}")
     return caseIDs
@@ -132,7 +130,7 @@ def main():
     # clean the output dir
     out = './out_3d'
     if os.path.isdir(out):
-        for f in glob.glob(out + '/*'):
+        for f in glob.glob(f'{out}/*'):
             os.remove(f)
         os.removedirs(out)
 

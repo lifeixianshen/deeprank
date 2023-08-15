@@ -135,12 +135,7 @@ class GridTools(object):
         self.local_tqdm = lambda x: tqdm(x) if prog_bar else x
         self.time = time
 
-        # if we already have an output containing the grid
-        # we update the existing features
-        _update_ = False
-        if self.mol_basename + '/grid_points/x' in self.hdf5:
-            _update_ = True
-
+        _update_ = f'{self.mol_basename}/grid_points/x' in self.hdf5
         if _update_:
             logif(f'\n=Updating grid data for {self.mol_basename}.',
                   self.time)
@@ -186,7 +181,7 @@ class GridTools(object):
         self.read_pdb()
 
         # read the grid from the hdf5
-        grid = self.hdf5.get(self.mol_basename + '/grid_points/')
+        grid = self.hdf5.get(f'{self.mol_basename}/grid_points/')
         self.x, self.y, self.z = grid['x'][()], grid['y'][()], grid['z'][()]
 
         # create the grid
@@ -249,7 +244,7 @@ class GridTools(object):
             # save to hdf5 if specfied
             t0 = time()
             logif('-- Save Features to HDF5', self.time)
-            self.hdf5_grid_data(dict_data, 'Feature_%s' % (self.feature_mode))
+            self.hdf5_grid_data(dict_data, f'Feature_{self.feature_mode}')
             logif('      Total %f ms' % ((time() - t0) * 1000), self.time)
 
     # add all the atomic densities to the data
@@ -266,8 +261,9 @@ class GridTools(object):
             # save to hdf5
             t0 = time()
             logif('-- Save Atomic Densities to HDF5', self.time)
-            self.hdf5_grid_data(self.atdens, 'AtomicDensities_%s' %
-                                (self.atomic_densities_mode))
+            self.hdf5_grid_data(
+                self.atdens, f'AtomicDensities_{self.atomic_densities_mode}'
+            )
             logif('      Total %f ms' % ((time() - t0) * 1000), self.time)
 
     ################################################################
@@ -407,14 +403,12 @@ class GridTools(object):
             if mode == 'diff':
                 self.atdens[elementtype] = atdensA - atdensB
 
-            # create the final grid: A + B
             elif mode == 'sum':
                 self.atdens[elementtype] = atdensA + atdensB
 
-            # create the final grid: A and B
             elif mode == 'ind':
-                self.atdens[elementtype + '_chain1'] = atdensA
-                self.atdens[elementtype + '_chain2'] = atdensB
+                self.atdens[f'{elementtype}_chain1'] = atdensA
+                self.atdens[f'{elementtype}_chain2'] = atdensB
             else:
                 raise ValueError(f'Atomic density mode {mode} not recognized')
 

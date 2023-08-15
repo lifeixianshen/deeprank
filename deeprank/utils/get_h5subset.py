@@ -29,7 +29,7 @@ def get_h5subset(fin, fout, n):
     h5 = h5py.File(fin, "r")
     h5out = h5py.File(fout, "w")
     print(f"First {n} groups in {fin}:")
-    for i in list(h5)[0:n]:
+    for i in list(h5)[:n]:
         print(i)
         h5.copy(h5[i], h5out)
 

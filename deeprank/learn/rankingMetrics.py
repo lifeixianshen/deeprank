@@ -127,9 +127,7 @@ def r_precision(r):
     """
     r = np.asarray(r) != 0
     z = r.nonzero()[0]
-    if not z.size:
-        return 0.
-    return np.mean(r[:z[-1] + 1])
+    return 0. if not z.size else np.mean(r[:z[-1] + 1])
 
 
 def precision_at_k(r, k):
@@ -188,9 +186,7 @@ def average_precision(r):
     """
     r = np.asarray(r) != 0
     out = [precision_at_k(r, k + 1) for k in range(r.size) if r[k]]
-    if not out:
-        return 0.
-    return np.mean(out)
+    return 0. if not out else np.mean(out)
 
 
 def mean_average_precision(rs):
@@ -290,6 +286,4 @@ def ndcg_at_k(r, k, method=0):
         Normalized discounted cumulative gain
     """
     dcg_max = dcg_at_k(sorted(r, reverse=True), k, method)
-    if not dcg_max:
-        return 0.
-    return dcg_at_k(r, k, method) / dcg_max
+    return 0. if not dcg_max else dcg_at_k(r, k, method) / dcg_max

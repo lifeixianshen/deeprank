@@ -60,7 +60,7 @@ class FullPSSM(FeatureClass):
 
         self.ref_mol_name = self.get_ref_mol_name(self.mol_name)
 
-        if self.out_type == 'pssmic' and not self.pssm_format == 'new':
+        if self.out_type == 'pssmic' and self.pssm_format != 'new':
             raise ValueError(f"You must provide 'new' format PSSM files"
                              f" to generate PSSM IC features for {self.mol_name}")
 
@@ -68,7 +68,7 @@ class FullPSSM(FeatureClass):
             # the residue order in res_names must be consistent with
             # that in PSSM file
             res_names = config.AA_codes_pssm_ordered
-            self.feature_names = tuple(['PSSM_' + n for n in res_names])
+            self.feature_names = tuple(f'PSSM_{n}' for n in res_names)
 
             for name in self.feature_names:
                 self.feature_data[name] = {}
@@ -172,10 +172,7 @@ class FullPSSM(FeatureClass):
         # set achors for all residues and get their xyz
         xyz_info, xyz = self.get_residue_center(sql)
 
-        xyz_dict = {}
-        for pos, info in zip(xyz, xyz_info):
-            xyz_dict[tuple(info)] = pos
-
+        xyz_dict = {tuple(info): pos for pos, info in zip(xyz, xyz_info)}
         # get interface contact residues
         # ctc_res = {"A":[chain 1 residues], "B": [chain2 residues]}
         ctc_res = sql.get_contact_residues(cutoff=cutoff,
@@ -199,7 +196,7 @@ class FullPSSM(FeatureClass):
         # check if interface residues have pssm values
         ctc_res_set = set(ctc_res)
         pssm_res_set = set(self.pssm.keys())
-        if len(ctc_res_set.intersection(pssm_res_set)) == 0:
+        if not ctc_res_set.intersection(pssm_res_set):
             raise ValueError(
                 f"{self.mol_name}: All interface residues have no pssm values."
                 f" Check residue chainID/ID/name consistency "
@@ -251,8 +248,9 @@ def __compute_feature__(pdb_data, featgrp, featgrp_raw, chain1, chain2, out_type
     """
 
     if config.PATH_PSSM_SOURCE is None:
-        raise FileExistsError(f"No available PSSM source, "
-                    f"check 'config.PATH_PSSM_SOURCE'")
+        raise FileExistsError(
+            "No available PSSM source, check 'config.PATH_PSSM_SOURCE'"
+        )
     else:
         path = config.PATH_PSSM_SOURCE
 

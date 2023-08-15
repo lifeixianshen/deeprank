@@ -359,7 +359,6 @@ class DataSet():
 
         except:
             raise
-            print('Unable to load molecule %s from %s' % (mol, fname))
 
     @staticmethod
     def check_hdf5_files(database):
@@ -371,12 +370,12 @@ class DataSet():
             try:
                 f = h5py.File(fname, 'r')
                 mol_names = list(f.keys())
-                if len(mol_names) == 0:
-                    warnings.warn('    -> %s is empty ' % fname)
+                if not mol_names:
+                    warnings.warn(f'    -> {fname} is empty ')
                     remove_file.append(fname)
                 f.close()
             except BaseException:
-                warnings.warn('    -> %s is corrputed ' % fname)
+                warnings.warn(f'    -> {fname} is corrputed ')
                 remove_file.append(fname)
 
         for name in remove_file:
@@ -422,7 +421,7 @@ class DataSet():
                     if self.filter(fh5[k]):
                         self.index_complexes += [(fdata,
                                                   k, None, None)]
-                        for irot in range(self.data_augmentation):
+                        for _ in range(self.data_augmentation):
                             axis, angle = pdb2sql.transform.get_rot_axis_angle(
                                 self.rotation_seed)
                             self.index_complexes += [
@@ -509,24 +508,22 @@ class DataSet():
 
         fnames_original = list(
             filter(lambda x: not re.search(r'_r\d+$', x), mol_names))
-        if self.use_rotation is not None:
-            fnames_augmented = []
-            # TODO if there is no augmentation data in dataaset,
-            # the fnames_augmented should be 0, should report it.
-            if self.use_rotation > 0:
-                for i in range(self.use_rotation):
-                    fnames_augmented += list(filter(lambda x:
-                                                    re.search('_r%03d$' % (i + 1), x), mol_names))
-                selected_mol_names = fnames_original + fnames_augmented
-            else:
-                selected_mol_names = fnames_original
-        else:
+        if self.use_rotation is None:
             selected_mol_names = mol_names
             sample_id = fnames_original[0]
-            num_rotations = len(list((filter(lambda x:
-                                re.search(sample_id + '_r', x), mol_names))))
+            num_rotations = len(
+                list(filter(lambda x: re.search(f'{sample_id}_r', x), mol_names))
+            )
             self.use_rotation = num_rotations
 
+        elif self.use_rotation > 0:
+            fnames_augmented = []
+            for i in range(self.use_rotation):
+                fnames_augmented += list(filter(lambda x:
+                                                re.search('_r%03d$' % (i + 1), x), mol_names))
+            selected_mol_names = fnames_original + fnames_augmented
+        else:
+            selected_mol_names = fnames_original
         return selected_mol_names
 
     def filter(self, molgrp):
@@ -550,24 +547,21 @@ class DataSet():
         for cond_name, cond_vals in self.dict_filter.items():
 
             try:
-                val = molgrp['targets/' + cond_name][()]
+                val = molgrp[f'targets/{cond_name}'][()]
             except KeyError:
                 warnings.warn(f'Filter {cond_name} not found for mol '
                               f'{molgrp.name}')
 
-            # if we have a string it's more complicated
-            if isinstance(cond_vals, str):
-                ops = ['>', '<', '==', '<=', '>=']
-                new_cond_vals = cond_vals
-                for o in ops:
-                    new_cond_vals = new_cond_vals.replace(
-                        o, 'val' + o)
-                if not eval(new_cond_vals):
-                    return False
-            else:
+            if not isinstance(cond_vals, str):
                 raise ValueError(
                     'Conditions not supported', cond_vals)
 
+            ops = ['>', '<', '==', '<=', '>=']
+            new_cond_vals = cond_vals
+            for o in ops:
+                new_cond_vals = new_cond_vals.replace(o, f'val{o}')
+            if not eval(new_cond_vals):
+                return False
         return True
 
     def get_mapped_feature_name(self):
@@ -588,7 +582,7 @@ class DataSet():
         # open a h5 file in case we need it
         f5 = h5py.File(self.train_database[0], 'r')
         mol_name = list(f5.keys())[0]
-        mapped_data = f5.get(mol_name + '/mapped_features/')
+        mapped_data = f5.get(f'{mol_name}/mapped_features/')
         chain_tags = ['_chain1', '_chain2']
 
         # if we select all the features
@@ -599,10 +593,8 @@ class DataSet():
 
             # loop over the feat types and add all the feat_names
             for feat_type, feat_names in mapped_data.items():
-                self.select_feature[feat_type] = [
-                    name for name in feat_names]
+                self.select_feature[feat_type] = list(feat_names)
 
-        # if a selection was made
         else:
 
             # we loop over the input dict
@@ -682,16 +674,14 @@ class DataSet():
         # open a h5 file in case we need it
         f5 = h5py.File(self.train_database[0], 'r')
         mol_name = list(f5.keys())[0]
-        raw_data = f5.get(mol_name + '/features/')
+        raw_data = f5.get(f'{mol_name}/features/')
 
         # if we select all the features
         if self.select_feature == "all":
-            self.select_feature = {}
-            self.select_feature['AtomicDensities'] = config.atom_vdw_radius_noH
-            self.select_feature['Features'] = [
-                name for name in raw_data.keys()]
-
-        # if a selection was made
+            self.select_feature = {
+                'AtomicDensities': config.atom_vdw_radius_noH,
+                'Features': list(raw_data.keys()),
+            }
         else:
             # we loop over the input dict
             for feat_type, feat_names in self.select_feature.items():
@@ -700,7 +690,7 @@ class DataSet():
                 if feat_names == 'all':
                     if feat_type == 'AtomicDensities':
                         self.select_feature['AtomicDensities'] = \
-                            config.atom_vdw_radius_noH
+                                config.atom_vdw_radius_noH
                     elif feat_type == 'Features':
                         self.select_feature[feat_type] = list(
                             raw_data.keys())
@@ -709,26 +699,25 @@ class DataSet():
                             f'Wrong feature type {feat_type}. '
                             f'It should be "AtomicDensities" or "Features".')
 
+                elif feat_type == 'AtomicDensities':
+                    assert isinstance(
+                        self.select_feature['AtomicDensities'], dict)
+                elif feat_type == 'Features':
+                    self.select_feature[feat_type] = []
+                    for name in feat_names:
+                        if '*' in name:
+                            match = name.split('*')[0]
+                            possible_names = list(raw_data.keys())
+                            match_names = [
+                                n for n in possible_names
+                                if n.startswith(match)]
+                            self.select_feature[feat_type] += match_names
+                        else:
+                            self.select_feature[feat_type] += [name]
                 else:
-                    if feat_type == 'AtomicDensities':
-                        assert isinstance(
-                            self.select_feature['AtomicDensities'], dict)
-                    elif feat_type == 'Features':
-                        self.select_feature[feat_type] = []
-                        for name in feat_names:
-                            if '*' in name:
-                                match = name.split('*')[0]
-                                possible_names = list(raw_data.keys())
-                                match_names = [
-                                    n for n in possible_names
-                                    if n.startswith(match)]
-                                self.select_feature[feat_type] += match_names
-                            else:
-                                self.select_feature[feat_type] += [name]
-                    else:
-                        raise KeyError(
-                            f'Wrong feature type {feat_type}. '
-                            f'It should be "AtomicDensities" or "Features".')
+                    raise KeyError(
+                        f'Wrong feature type {feat_type}. '
+                        f'It should be "AtomicDensities" or "Features".')
 
         f5.close()
 
@@ -737,14 +726,14 @@ class DataSet():
 
         f5 = h5py.File(self.train_database[0], 'r')
         mol_name = list(f5.keys())[0]
-        mapgrp = f5.get(mol_name + '/mapped_features/')
+        mapgrp = f5.get(f'{mol_name}/mapped_features/')
 
         logger.info('\nPossible Features:')
         logger.info('-' * 20)
         for feat_type in list(mapgrp.keys()):
-            logger.info('== %s' % feat_type)
+            logger.info(f'== {feat_type}')
             for fname in list(mapgrp[feat_type].keys()):
-                logger.info('   -- %s' % fname)
+                logger.info(f'   -- {fname}')
 
         if self.select_feature is not None:
             logger.info('\nYour selection was:')
@@ -753,12 +742,12 @@ class DataSet():
                     logger.info(
                         '== \x1b[0;37;41m' + feat_type + '\x1b[0m')
                 else:
-                    logger.info('== %s' % feat_type)
+                    logger.info(f'== {feat_type}')
                     if isinstance(feat, str):
-                        logger.info('   -- %s' % feat)
+                        logger.info(f'   -- {feat}')
                     if isinstance(feat, list):
                         for f in feat:
-                            logger.info('  -- %s' % f)
+                            logger.info(f'  -- {f}')
 
         logger.info("You don't need to specify _chainA _chainB for each feature. " +
                     "The code will append it automatically")
@@ -859,7 +848,7 @@ class DataSet():
             # create the norm isntances at the first passage
             if first:
                 self.param_norm = {'features': [], 'targets': None}
-                for ifeat in range(feature.shape[0]):
+                for _ in range(feature.shape[0]):
                     self.param_norm['features'].append(NormParam())
                 self.param_norm['targets'] = MinMaxParam()
                 first = False
@@ -929,7 +918,7 @@ class DataSet():
         for f5 in self.train_database:
 
             # get the precalculated data
-            fdata = os.path.splitext(f5)[0] + '_norm.pckl'
+            fdata = f'{os.path.splitext(f5)[0]}_norm.pckl'
 
             # if the file doesn't exist we create it
             if not os.path.isfile(fdata):
@@ -946,8 +935,7 @@ class DataSet():
                     mean = data['features'][feat_type][name].mean
                     var = data['features'][feat_type][name].var
                     if var == 0:
-                        logger.info(
-                            ' : STD is null for %s in %s' % (name, f5))
+                        logger.info(f' : STD is null for {name} in {f5}')
                     self.param_norm['features'][feat_type][name].add(
                         mean, var)
 
@@ -966,9 +954,7 @@ class DataSet():
                 self.param_norm['features'][feat_types][feat].process(
                     nfile)
                 if self.param_norm['features'][feat_types][feat].std == 0:
-                    logger.info(
-                        '  Final STD Null for %s/%s. Changed it to 1' %
-                        (feat_types, feat))
+                    logger.info(f'  Final STD Null for {feat_types}/{feat}. Changed it to 1')
                     self.param_norm['features'][feat_types][feat].std = 1
 
     def _get_target_ordering(self, order):
@@ -978,13 +964,13 @@ class DataSet():
         determine the ordering 'lower' is assumed
         """
 
-        lower_list = ['IRMSD', 'LRMSD', 'HADDOCK']
-        higher_list = ['DOCKQ', 'Fnat']
-        NA_list = ['binary_class', 'BIN_CLASS', 'class']
-
         if order is not None:
             self.target_ordering = order
         else:
+            lower_list = ['IRMSD', 'LRMSD', 'HADDOCK']
+            higher_list = ['DOCKQ', 'Fnat']
+            NA_list = ['binary_class', 'BIN_CLASS', 'class']
+
             if self.select_target in lower_list:
                 self.target_ordering = 'lower'
             elif self.select_target in higher_list:
@@ -1100,7 +1086,6 @@ class DataSet():
         Returns:
             np.array,float: features, targets
         """
-        outtype = 'float32'
         fh5 = h5py.File(fname, 'r')
 
         if mol is None:
@@ -1120,9 +1105,8 @@ class DataSet():
         for feat_type, feat_names in self.select_feature.items():
 
             # see if the feature exists
-            if 'mapped_features/' + feat_type in mol_data.keys():
-                feat_dict = mol_data.get(
-                    'mapped_features/' + feat_type)
+            if f'mapped_features/{feat_type}' in mol_data.keys():
+                feat_dict = mol_data.get(f'mapped_features/{feat_type}')
             else:
                 logger.error(
                     f'Feature type {feat_type} not found in file {fname} '
@@ -1141,13 +1125,10 @@ class DataSet():
                     data = feat_dict[name]
                 except KeyError:
                     logger.error(
-                        f'Feature {name} not found in file {fname} for mol '
-                        f'{mol} and feature type {feat_type}.\n'
-                        f'Possible feature are:\n\t' +
-                        '\n\t'.join(list(
-                            mol_data['mapped_features/' +
-                                     feat_type].keys()
-                        ))
+                        f'Feature {name} not found in file {fname} for mol {mol} and feature type {feat_type}.\nPossible feature are:\n\t'
+                        + '\n\t'.join(
+                            list(mol_data[f'mapped_features/{feat_type}'].keys())
+                        )
                     )
 
                 # check its sparse attribute
@@ -1166,7 +1147,7 @@ class DataSet():
 
         # get the target value
         try:
-            target = mol_data.get('targets/' + self.select_target)[()]
+            target = mol_data.get(f'targets/{self.select_target}')[()]
         except Exception:
             target = None
             logger.warning(f'No target value for: {fname} - not required for the test set')
@@ -1174,6 +1155,7 @@ class DataSet():
         # close
         fh5.close()
 
+        outtype = 'float32'
         # make sure all the feature have exact same type
         # if they don't collate_fn in the creation of the minibatch will fail.
         # Note returning torch.FloatTensor makes each epoch twice longer ...
@@ -1216,7 +1198,7 @@ class DataSet():
 
         # get the target value
         try:
-            target = mol_data.get('targets/' + self.select_target)[()]
+            target = mol_data.get(f'targets/{self.select_target}')[()]
         except Exception:
             target = None
             logger.warning(f'No target value for: {fname} - not required for the test set')
@@ -1270,15 +1252,12 @@ class DataSet():
             raise ValueError('Operation not callable', op)
 
         nFeat = len(feature)
-        pair_indexes = list(
-            np.arange(nFeat).reshape(int(nFeat / 2), 2))
+        pair_indexes = list(np.arange(nFeat).reshape(nFeat // 2, 2))
 
         outtype = feature.dtype
-        new_feat = []
-        for ind in pair_indexes:
-            new_feat.append(
-                op(feature[ind[0], ...], feature[ind[1], ...]))
-
+        new_feat = [
+            op(feature[ind[0], ...], feature[ind[1], ...]) for ind in pair_indexes
+        ]
         return np.array(new_feat).astype(outtype)
 
     def get_grid(self, mol_data):
@@ -1435,7 +1414,7 @@ class DataSet():
 
             tmp_feat_ser = [np.zeros(npts), np.zeros(npts)]
             tmp_feat_vect = [np.zeros(npts), np.zeros(npts)]
-            data = np.array(mol_data['features/' + name][()])
+            data = np.array(mol_data[f'features/{name}'][()])
 
             if data.shape[0]==0:
                 logger.warning(f'No {name} retrieved at the protein/protein interface')
@@ -1461,16 +1440,12 @@ class DataSet():
 
                     for chainID, xyz, val in zip(chain, pos, feat_value):
                         tmp_feat_ser[int(chainID)] += \
-                                                      self._featgrid(xyz, val, grid, npts)
+                                                          self._featgrid(xyz, val, grid, npts)
 
                 if __vectorize__ == 'both':
                     assert np.allclose(tmp_feat_ser, tmp_feat_vect)
 
-            if __vectorize__:
-                feat += tmp_feat_vect
-            else:
-                feat += tmp_feat_ser
-
+            feat += tmp_feat_vect if __vectorize__ else tmp_feat_ser
         return feat
 
     @staticmethod

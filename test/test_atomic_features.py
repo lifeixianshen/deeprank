@@ -27,43 +27,33 @@ class TestAtomicFeature(unittest.TestCase):
             'deeprank.features', '') + '/forcefield/'
 
         # declare the feature calculator instance
-        atfeat = AtomicFeature(pdb,
-                               param_charge=FF + 'protein-allhdg5-4_new.top',
-                               param_vdw=FF + 'protein-allhdg5-4_new.param',
-                               patch_file=FF + 'patch.top')
+        atfeat = AtomicFeature(
+            pdb,
+            param_charge=f'{FF}protein-allhdg5-4_new.top',
+            param_vdw=f'{FF}protein-allhdg5-4_new.param',
+            patch_file=f'{FF}patch.top',
+        )
         # assign parameters
         atfeat.assign_parameters()
 
         # only compute the pair interactions here
         atfeat.evaluate_pair_interaction(save_interactions=test_name)
 
-        # read the files
-        f = open(REF)
-        ref = f.readlines()
-        ref = [r for r in ref if not r.startswith(
-            '#') and not r.startswith('Total') and len(r.split()) > 0]
-        f.close()
-
-        f = open(REF)
-        ref_tot = f.readlines()
-        ref_tot = [r for r in ref_tot if r.startswith('Total')]
-        f.close()
-
-        # read the test
-        f = open(test_name)
-        test = f.readlines()
-        test = [
-            t for t in test if len(
-                t.split()) > 0 and not t.startswith('Total')]
-        f.close()
-
-        f = open(test_name)
-        test_tot = f.readlines()
-        test_tot = [t for t in test_tot if t.startswith('Total')]
-        f.close()
-
-        # compare files
-        nint = 0
+        with open(REF) as f:
+            ref = f.readlines()
+            ref = [r for r in ref if not r.startswith(
+                '#') and not r.startswith('Total') and len(r.split()) > 0]
+        with open(REF) as f:
+            ref_tot = f.readlines()
+            ref_tot = [r for r in ref_tot if r.startswith('Total')]
+        with open(test_name) as f:
+            test = f.readlines()
+            test = [
+                t for t in test if len(
+                    t.split()) > 0 and not t.startswith('Total')]
+        with open(test_name) as f:
+            test_tot = f.readlines()
+            test_tot = [t for t in test_tot if t.startswith('Total')]
         for ltest, lref in zip(test, ref):
             ltest = ltest.split()
             lref = lref.split()
@@ -72,7 +62,7 @@ class TestAtomicFeature(unittest.TestCase):
                        (ltest[4], ltest[5], ltest[6], ltest[7]))
             at_ref = ((lref[1], lref[2], lref[0], lref[3]),
                       (lref[5], lref[6], lref[4], lref[7]))
-            if not at_test == at_ref:
+            if at_test != at_ref:
                 raise AssertionError()
 
             dtest = np.array(float(ltest[8]))
@@ -84,8 +74,6 @@ class TestAtomicFeature(unittest.TestCase):
             val_ref = np.array(lref[9:11]).astype('float64')
             if not np.allclose(val_ref, val_test, atol=1E-6):
                 raise AssertionError()
-
-            nint += 1
 
         Etest = np.array([float(test_tot[0].split()[3]),
                           float(test_tot[1].split()[3])])

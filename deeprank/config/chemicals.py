@@ -37,7 +37,7 @@ _aa_pssm = ('A', 'R', 'N', 'D', 'C', 'Q', 'E', 'G', 'H', 'I',
             'L', 'K', 'M', 'F', 'P', 'S', 'T', 'W', 'Y', 'V')
 
 # ('ALA',...)
-AA_codes = tuple([i[0] for i in _aa_standard])
+AA_codes = tuple(i[0] for i in _aa_standard)
 
 # {'ALA': 'A', ...}
 AA_codes_3to1 = dict(_aa_standard + _aa_nonstadnard)
@@ -46,7 +46,7 @@ AA_codes_3to1 = dict(_aa_standard + _aa_nonstadnard)
 AA_codes_1to3 = dict([i[::-1] for i in _aa_standard + _aa_nonstadnard])
 
 # AA codes ordered as PSSM header
-AA_codes_pssm_ordered = tuple([AA_codes_1to3[i] for i in _aa_pssm])
+AA_codes_pssm_ordered = tuple(AA_codes_1to3[i] for i in _aa_pssm)
 
 # AA properties
 AA_properties = {

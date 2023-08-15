@@ -250,9 +250,7 @@ def add_rank(df, groupby = ['label', 'caseID']):
         tmp_df['rank'] = rank_raw
         frames.append(tmp_df)
 
-    new_df = pd.concat(frames)
-
-    return new_df
+    return pd.concat(frames)
 
 def add_perc(df, groupby = ['label', 'caseID']):
     """
@@ -285,6 +283,4 @@ def add_perc(df, groupby = ['label', 'caseID']):
         tmp_df['perc'] = rank_raw/num_mol
         frames.append(tmp_df)
 
-    new_df = pd.concat(frames)
-
-    return new_df
+    return pd.concat(frames)

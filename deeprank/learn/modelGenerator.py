@@ -64,22 +64,13 @@ class NetworkGenerator(object):
         self.conv_types = ['conv', 'dropout', 'pool']
 
         # conv parameters
-        self.conv_params = {}
-        self.conv_params['output_size'] = range(1, 10)
-        self.conv_params['kernel_size'] = range(2, 5)
-
+        self.conv_params = {'output_size': range(1, 10), 'kernel_size': range(2, 5)}
         # pool parameters
-        self.pool_params = {}
-        self.pool_params['kernel_size'] = range(2, 5)
-
+        self.pool_params = {'kernel_size': range(2, 5)}
         # params of the dropout layers
-        self.dropout_params = {}
-        self.dropout_params['percent'] = np.linspace(0.1, 0.9, 9)
-
+        self.dropout_params = {'percent': np.linspace(0.1, 0.9, 9)}
         # params for the automatic generation of fc layers
-        self.fc_params = {}
-        self.fc_params['output_size'] = [2**i for i in range(4, 11)]
-
+        self.fc_params = {'output_size': [2**i for i in range(4, 11)]}
         # types of post processing
         # must be in torch.nn.functional
         self.post_types = [None, 'relu']
@@ -94,14 +85,13 @@ class NetworkGenerator(object):
     def write(self):
         """Write the model to file."""
 
-        f = open(self.fname, 'w')
-        self._write_import(f)
-        self._write_definition(f)
-        self._write_init(f)
-        self._write_conv_output(f)
-        self._write_forward_feature(f)
-        self._write_forward(f)
-        f.close()
+        with open(self.fname, 'w') as f:
+            self._write_import(f)
+            self._write_definition(f)
+            self._write_init(f)
+            self._write_conv_output(f)
+            self._write_forward_feature(f)
+            self._write_forward(f)
 
     @staticmethod
     # import statement
@@ -135,7 +125,7 @@ import torch.nn.functional as F
     # initialization of the  model
     # here all the layers are defined
     def _write_init(self, fhandle):
-        fhandle.write('class ' + self.name + '(nn.Module):\n')
+        fhandle.write(f'class {self.name}' + '(nn.Module):\n')
         fhandle.write('\n')
         fhandle.write('\tdef __init__(self,input_shape):\n')
         fhandle.write('\t\tsuper(%s,self).__init__()\n' % (self.name))
@@ -198,9 +188,9 @@ import torch.nn.functional as F
         print('# Network Structure')
         print('#' + '-' * ndash)
         for ilayer, layer in enumerate(self.conv_layers):
-            print('%s' % layer.__human_readable_str__(ilayer))
+            print(f'{layer.__human_readable_str__(ilayer)}')
         for ilayer, layer in enumerate(self.fc_layers):
-            print('%s' % layer.__human_readable_str__(ilayer))
+            print(f'{layer.__human_readable_str__(ilayer)}')
         print('#' + '-' * ndash + '\n')
 
     #########################################
@@ -249,9 +239,7 @@ import torch.nn.functional as F
         # each layer type has its own params
         # the output/input size matching is done automatically
         if name == 'conv':
-            params = {}
-            params['name'] = name
-
+            params = {'name': name}
             if ilayer == 0:
                 params['input_size'] = -1  # fixed by input shape
             else:
@@ -291,14 +279,13 @@ import torch.nn.functional as F
         # each layer type has its own params
         # the output/input size matching is done automatically
         name = 'fc'  # so far only fc layer here
-        params = {}
-        params['name'] = name
-        if ilayer == 0:
-            params['input_size'] = -1  # fixed by the conv layers
-        else:
-            params['input_size'] = self.fc_layers[ilayer - 1].output_size
-
-        params['output_size'] = np.random.choice(self.fc_params['output_size'])
+        params = {
+            'name': name,
+            'input_size': -1
+            if ilayer == 0
+            else self.fc_layers[ilayer - 1].output_size,
+            'output_size': np.random.choice(self.fc_params['output_size']),
+        }
         params['post'] = np.random.choice(self.post_types)
 
         current_layer = ast.list_eval(params['name'])()
@@ -353,13 +340,13 @@ class conv(object):
             return 'x = self.convlayer_%03d(x)' % ilayer
 
     def __get_params__(self):
-        params = {}
-        params['name'] = self.__name__
-        params['input_size'] = self.input_size
-        params['output_size'] = self.output_size
-        params['kernel_size'] = self.kernel_size
-        params['post'] = self.post
-        return params
+        return {
+            'name': self.__name__,
+            'input_size': self.input_size,
+            'output_size': self.output_size,
+            'kernel_size': self.kernel_size,
+            'post': self.post,
+        }
 
     def __init_from_dict__(self, params):
         self.input_size = params['input_size']
@@ -407,11 +394,11 @@ class pool(object):
             return 'x = self.convlayer_%03d(x)' % ilayer
 
     def __get_params__(self):
-        params = {}
-        params['name'] = self.__name__
-        params['kernel_size'] = self.kernel_size
-        params['post'] = self.post
-        return params
+        return {
+            'name': self.__name__,
+            'kernel_size': self.kernel_size,
+            'post': self.post,
+        }
 
     def __init_from_dict__(self, params):
         self.kernel_size = params['kernel_size']
@@ -450,10 +437,7 @@ class dropout(object):
         return 'x = self.convlayer_%03d(x)' % ilayer
 
     def __get_params__(self):
-        params = {}
-        params['name'] = self.__name__
-        params['percent'] = self.percent
-        return params
+        return {'name': self.__name__, 'percent': self.percent}
 
     def __init_from_dict__(self, params):
         self.percent = params['percent']
@@ -504,12 +488,12 @@ class fc(object):
             return 'x = self.fclayer_%03d(x)' % ilayer
 
     def __get_params__(self):
-        params = {}
-        params['name'] = self.__name__
-        params['input_size'] = self.input_size
-        params['output_size'] = self.output_size
-        params['post'] = self.post
-        return params
+        return {
+            'name': self.__name__,
+            'input_size': self.input_size,
+            'output_size': self.output_size,
+            'post': self.post,
+        }
 
     def __init_from_dict__(self, params):
         self.input_size = params['input_size']
@@ -523,8 +507,7 @@ class fc(object):
 
 if __name__ == '__main__':
 
-    conv_layers = []
-    conv_layers.append(conv(output_size=4, kernel_size=2, post='relu'))
+    conv_layers = [conv(output_size=4, kernel_size=2, post='relu')]
     conv_layers.append(pool(kernel_size=2))
     conv_layers.append(
         conv(
@@ -534,8 +517,7 @@ if __name__ == '__main__':
             post='relu'))
     conv_layers.append(pool(kernel_size=2))
 
-    fc_layers = []
-    fc_layers.append(fc(output_size=84, post='relu'))
+    fc_layers = [fc(output_size=84, post='relu')]
     fc_layers.append(fc(input_size=84, output_size=1))
 
     MG = NetworkGenerator(

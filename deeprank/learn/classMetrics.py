@@ -21,8 +21,8 @@ def sensitivity(yp, yt):
     if p == 0:
         tpr = float('inf')
         warnings.warn(
-            f'Number of positive cases is 0, '
-            f'TPR or sensitivity is assigned as inf')
+            'Number of positive cases is 0, TPR or sensitivity is assigned as inf'
+        )
     else:
         tpr = tp / p
     return tpr
@@ -40,14 +40,12 @@ def specificity(yp, yt):
     """
     tn = true_negative(yp, yt)
     n = negative(yt)
-    if n == 0:
-        warnings.warn(
-            f'Number of negative cases is 0, '
-            f'TNR or specificity is assigned as inf')
-        tnr = float('inf')
-    else:
-        tnr = tn / n
-    return tnr
+    if n != 0:
+        return tn / n
+    warnings.warn(
+        'Number of negative cases is 0, TNR or specificity is assigned as inf'
+    )
+    return float('inf')
 
 
 def precision(yp, yt):
@@ -63,14 +61,12 @@ def precision(yp, yt):
     tp = true_positive(yp, yt)
     fp = false_positive(yp, yt)
     tp, fp = map(np.float64, [tp, fp])
-    if tp + fp == 0:
-        warnings.warn(
-            f'Total number of true positive and false positive cases is 0, '
-            f'PPV or precision is assigned as inf')
-        ppv = float('inf')
-    else:
-        ppv = tp / (tp + fp)
-    return ppv
+    if tp + fp != 0:
+        return tp / (tp + fp)
+    warnings.warn(
+        'Total number of true positive and false positive cases is 0, PPV or precision is assigned as inf'
+    )
+    return float('inf')
 
 
 def accuracy(yp, yt):
@@ -88,8 +84,7 @@ def accuracy(yp, yt):
     p = positive(yt)
     n = negative(yt)
     tp, tn, p, n = map(np.float64, [tp, tn, p, n])
-    acc = (tp + tn) / (p + n)
-    return acc
+    return (tp + tn) / (p + n)
 
 
 def F1(yp, yt):
@@ -106,8 +101,7 @@ def F1(yp, yt):
     fp = false_positive(yp, yt)
     fn = false_negative(yp, yt)
     tp, fp, fn = map(np.float64, [tp, fp, fn])
-    f1 = 2 * tp / (2 * tp + fp + fn)
-    return f1
+    return 2 * tp / (2 * tp + fp + fn)
 
 def mcc(yp, yt):
     """Matthews correlation coefficient (MCC)
@@ -124,8 +118,9 @@ def mcc(yp, yt):
     fp = false_positive(yp, yt)
     fn = false_negative(yp, yt)
     tp, tn, fp, fn = map(np.float64, [tp, tn, fp, fn])
-    mcc = (tp * tn - fp * fn) / np.sqrt((tp + fp) * (tp + fn) * (tn + fp) * (tn + fn))
-    return mcc
+    return (tp * tn - fp * fn) / np.sqrt(
+        (tp + fp) * (tp + fn) * (tn + fp) * (tn + fn)
+    )
 
 def true_positive(yp, yt):
     """number of true positive cases.

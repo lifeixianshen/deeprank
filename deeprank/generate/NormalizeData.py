@@ -31,7 +31,7 @@ class NormalizeData(object):
         self.fname = fname
         self.parameters = {'features': {}, 'targets': {}}
         self.shape = shape
-        self.fexport = os.path.splitext(self.fname)[0] + '_norm.pckl'
+        self.fexport = f'{os.path.splitext(self.fname)[0]}_norm.pckl'
         self.skip_feature = []
         self.skip_target = []
 
@@ -49,10 +49,8 @@ class NormalizeData(object):
 
         if os.path.isfile(self.fexport):
 
-            f = open(self.fexport, 'rb')
-            self.parameters = pickle.load(f)
-            f.close()
-
+            with open(self.fexport, 'rb') as f:
+                self.parameters = pickle.load(f)
             for _, feat_name in self.parameters['features'].items():
                 for name, _ in feat_name.items():
                     self.skip_feature.append(name)
@@ -92,7 +90,7 @@ class NormalizeData(object):
         for mol in mol_names:
 
             # get the mapped features group
-            data_group = f5.get(mol + '/mapped_features/')
+            data_group = f5.get(f'{mol}/mapped_features/')
 
             # loop over all the feature types
             for feat_types, feat_names in data_group.items():
@@ -114,7 +112,7 @@ class NormalizeData(object):
                         )
 
                     # load the matrix
-                    feat_data = data_group[feat_types + '/' + name]
+                    feat_data = data_group[f'{feat_types}/{name}']
                     if feat_data.attrs['sparse']:
                         mat = sparse.FLANgrid(sparse=True,
                                               index=feat_data['index'][:],
@@ -128,7 +126,7 @@ class NormalizeData(object):
                         np.mean(mat), np.var(mat))
 
             # get the target groups
-            target_group = f5.get(mol + '/targets')
+            target_group = f5.get(f'{mol}/targets')
 
             # loop over all the targets
             for tname, tval in target_group.items():
@@ -156,9 +154,8 @@ class NormalizeData(object):
     def _export_data(self):
         """Pickle the data to file."""
 
-        f = open(self.fexport, 'wb')
-        pickle.dump(self.parameters, f)
-        f.close()
+        with open(self.fexport, 'wb') as f:
+            pickle.dump(self.parameters, f)
 
 
 class NormParam(object):

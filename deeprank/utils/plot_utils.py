@@ -149,17 +149,11 @@ def read_haddockScoreFL(HS_h5FL):
 
     data = pd.read_hdf(HS_h5FL)
 
-    stats = {}
-    stats['haddock-score'] = {}
 #    stats['i-RMSD'] = {}
 
     modelIDs = [re.sub('.pdb', '', x)
                 for x in data['modelID']]  # remove .pdb from model ID
-    stats['haddock-score'] = dict(zip_equal(modelIDs, data['haddock-score']))
-# stats['i-RMSD'] = dict(zip(modelIDs, data['i-RMSD'])) # some i-RMSDs are
-# wrong!!! Reported an issue.
-
-    return stats
+    return {'haddock-score': dict(zip_equal(modelIDs, data['haddock-score']))}
 
 
 def plot_DR_iRMSD(df, figname=None):
@@ -578,22 +572,17 @@ def hit_statistics(df):
     print('hit_stats.tsv generated\n')
 
 def numHits(target):
-    # target = [0, 0, 1, 0,... ]
-    num_hits = sum(target.astype(int))
-    return num_hits
+    return sum(target.astype(int))
 
 def numModels(target):
-    # target = [0, 0, 1, 0,... ]
-    num_models = len(target)
-    return num_models
+    return len(target)
 
 def get_caseID(modelID):
     # modelID = 1AVX_ranair-it0_5286
     # caseID = 1AVX
 
     tmp = re.split('_', modelID)
-    caseID = tmp[0]
-    return caseID
+    return tmp[0]
 
 #-------------------------------------
 #--- BEGIN: functions not used -------

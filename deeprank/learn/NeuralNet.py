@@ -227,10 +227,7 @@ class NeuralNet():
 
         # print model summary
         sys.stdout.flush()
-        if cuda is True:
-            device = torch.device("cuda")  # PyTorch v0.4.0
-        else:
-            device = torch.device("cpu")
+        device = torch.device("cuda") if cuda is True else torch.device("cpu")
         summary(self.net.to(device),
                 self.data_set.input_shape,
                 device=device.type)
@@ -246,15 +243,14 @@ class NeuralNet():
                     paramname_new = paramname.lstrip('module.')
                     if paramname != paramname_new:
                         self.state['state_dict'][paramname_new] = \
-                            self.state['state_dict'][paramname]
+                                self.state['state_dict'][paramname]
                         del self.state['state_dict'][paramname]
             self.load_model_params()
 
         # multi-gpu
         if self.ngpu > 1:
-            ids = [i for i in range(self.ngpu)]
+            ids = list(range(self.ngpu))
             self.net = nn.DataParallel(self.net, device_ids=ids).cuda()
-        # cuda compatible
         elif self.cuda:
             self.net = self.net.cuda()
 
@@ -390,7 +386,7 @@ class NeuralNet():
 
         time = int(time)
         day = time // (24 * 3600)
-        time = time % (24 * 3600)
+        time %= 24 * 3600
         hour = time // 3600
         time %= 3600
         minutes = time // 60
@@ -443,7 +439,7 @@ class NeuralNet():
         if self.plot is True :
             self._plot(os.path.join(self.outdir, 'prediction.png'))
         if self.save_hitrate:
-            self.plot_hit_rate(os.path.join(self.outdir + 'hitrate.png'))
+            self.plot_hit_rate(os.path.join(f'{self.outdir}hitrate.png'))
 
         self._export_epoch_hdf5(0, self.data)
         self.f5.close()
@@ -607,11 +603,7 @@ class NeuralNet():
         # printing options
         nprint = np.max([1, int(nepoch / 10)])
 
-        # pin memory for cuda
-        pin = False
-        if self.cuda:
-            pin = True
-
+        pin = bool(self.cuda)
         # create the sampler
         train_sampler = data_utils.sampler.SubsetRandomSampler(index_train)
         valid_sampler = data_utils.sampler.SubsetRandomSampler(index_valid)
@@ -734,8 +726,7 @@ class NeuralNet():
                 if mode not in self.losses:
                     continue
                 if self.losses[mode][-1] < min_error[mode]:
-                    self.save_model(
-                        filename="best_{}_model.pth.tar".format(mode))
+                    self.save_model(filename=f"best_{mode}_model.pth.tar")
                     min_error[mode] = self.losses[mode][-1]
 
             # save all the model if required
@@ -744,7 +735,7 @@ class NeuralNet():
 
             # plot and save epoch
             if (export_intermediate and epoch % nprint == nprint - 1) or \
-                epoch == 0 or epoch == nepoch - 1:
+                    epoch == 0 or epoch == nepoch - 1:
 
                 if self.plot:
                     figname = os.path.join(self.outdir,
@@ -852,7 +843,7 @@ class NeuralNet():
                 data['targets'] += targets.data.numpy().tolist()
 
             fname, molname = mol[0], mol[1]
-            data['mol'] += [(f, m) for f, m in zip(fname, molname)]
+            data['mol'] += list(zip(fname, molname))
 
         # transform the output back
         if self.data_set.normalize_targets:
@@ -962,7 +953,7 @@ class NeuralNet():
         ax.set_xlabel('Epoch')
         ax.set_ylabel(metricname.upper())
 
-        figname = os.path.join(self.outdir, metricname + '.png')
+        figname = os.path.join(self.outdir, f'{metricname}.png')
         fig.savefig(figname)
         plt.close()
 

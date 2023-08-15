@@ -61,10 +61,8 @@ def get_hdf5FLs(caseIDs, hdf5_DIR):
 
 def read_listFL(listFL):
 
-    f = open(listFL,'r')
-    caseIDs = f.readlines()
-    f.close()
-
+    with open(listFL,'r') as f:
+        caseIDs = f.readlines()
     caseIDs = [ x.strip() for x in caseIDs if not re.search('^#', x) and not re.search('^\s*$',x) ]
 
     print (f"{len(caseIDs)} cases read from {listFL}")
@@ -142,9 +140,9 @@ def main():
         divide_data(hdf5_DIR = hdf5_DIR,caseID_FL = caseID_FL, portion = [0.6,0.2,0.2], n=n, random = False)
 
     # clean the output dir
-    out = './out_001_smallNN_balance_nofilt_new_n_' + str(n)
+    out = f'./out_001_smallNN_balance_nofilt_new_n_{str(n)}'
     if os.path.isdir(out):
-        for f in glob.glob(out+'/*'):
+        for f in glob.glob(f'{out}/*'):
             os.remove(f)
         os.removedirs(out)
 
@@ -169,8 +167,6 @@ def main():
                 normalize_targets=False,
                 clip_features=False,
                 pair_chain_feature=np.add)
-                #dict_filter={'DOCKQ':'>0.01', 'IRMSD':'<=4 or >10'}
-
     weights = [1.0/(3343981-237480), 1.0/237480]
     class_weights = torch.FloatTensor(weights).cuda()
     # create the network

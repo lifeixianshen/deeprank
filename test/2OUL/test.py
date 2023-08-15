@@ -20,10 +20,13 @@ test_name = './atomic_features/test_2OUL_1.dat'
 FF = pkg_resources.resource_filename('deeprank.features', '') + '/forcefield/'
 
 # declare the feature calculator instance
-atfeat = AtomicFeature(pdb, fix_chainID=True,
-                       param_charge=FF + 'protein-allhdg5-4_new.top',
-                       param_vdw=FF + 'protein-allhdg5-4_new.param',
-                       patch_file=FF + 'patch.top')
+atfeat = AtomicFeature(
+    pdb,
+    fix_chainID=True,
+    param_charge=f'{FF}protein-allhdg5-4_new.top',
+    param_vdw=f'{FF}protein-allhdg5-4_new.param',
+    patch_file=f'{FF}patch.top',
+)
 # assign parameters
 atfeat.assign_parameters()
 
